@@ -4,25 +4,28 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'your-dockerhub-username/hello-world'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        MAVEN_CMD = 'C:\\Program Files\\apache-maven-3.9.15-bin\\apache-maven-3.9.15\\bin\\mvn.cmd'
+        DOCKER_CMD = 'C:\\Users\\PranaliLambe\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe'
+        KUBECTL_CMD = 'C:\\Users\\PranaliLambe\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe'
     }
 
     stages {
         stage('Test') {
             steps {
-                bat 'mvn clean test'
+                bat '"%MAVEN_CMD%" clean test'
             }
         }
 
         stage('Package') {
             steps {
-                bat 'mvn package -DskipTests'
+                bat '"%MAVEN_CMD%" package -DskipTests'
             }
         }
 
         stage('Docker Build') {
             steps {
-                bat 'docker build -t %DOCKER_IMAGE%:%IMAGE_TAG% .'
-                bat 'docker tag %DOCKER_IMAGE%:%IMAGE_TAG% %DOCKER_IMAGE%:latest'
+                bat '"%DOCKER_CMD%" build -t %DOCKER_IMAGE%:%IMAGE_TAG% .'
+                bat '"%DOCKER_CMD%" tag %DOCKER_IMAGE%:%IMAGE_TAG% %DOCKER_IMAGE%:latest'
             }
         }
 
@@ -35,25 +38,25 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    bat 'echo %DOCKER_PASSWORD%| docker login --username %DOCKER_USERNAME% --password-stdin'
-                    bat 'docker push %DOCKER_IMAGE%:%IMAGE_TAG%'
-                    bat 'docker push %DOCKER_IMAGE%:latest'
+                    bat 'echo %DOCKER_PASSWORD%| "%DOCKER_CMD%" login --username %DOCKER_USERNAME% --password-stdin'
+                    bat '"%DOCKER_CMD%" push %DOCKER_IMAGE%:%IMAGE_TAG%'
+                    bat '"%DOCKER_CMD%" push %DOCKER_IMAGE%:latest'
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                bat 'kubectl apply -f k8s/deployment.yaml'
-                bat 'kubectl set image deployment/hello-world hello-world=%DOCKER_IMAGE%:%IMAGE_TAG%'
-                bat 'kubectl rollout status deployment/hello-world'
+                bat '"%KUBECTL_CMD%" apply -f k8s/deployment.yaml'
+                bat '"%KUBECTL_CMD%" set image deployment/hello-world hello-world=%DOCKER_IMAGE%:%IMAGE_TAG%'
+                bat '"%KUBECTL_CMD%" rollout status deployment/hello-world'
             }
         }
     }
 
     post {
         always {
-            bat 'docker logout'
+            bat '"%DOCKER_CMD%" logout'
         }
     }
 }
