@@ -32,15 +32,8 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && if not exist target\\*.jar (echo No JAR found in target && exit /b 1) && "%DOCKER_CMD%" build --load --progress=plain -t %IMAGE_NAME%:%IMAGE_TAG% -t %IMAGE_NAME%:latest .'
-                    bat '"%DOCKER_CMD%" image inspect %IMAGE_NAME%:%IMAGE_TAG%'
                     bat 'echo %DOCKER_PASSWORD%| "%DOCKER_CMD%" login --username %DOCKER_USERNAME% --password-stdin'
-                    bat '"%DOCKER_CMD%" tag %IMAGE_NAME%:%IMAGE_TAG% %DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG%'
-                    bat '"%DOCKER_CMD%" tag %IMAGE_NAME%:latest %DOCKER_USERNAME%/%IMAGE_NAME%:latest'
-                    bat 'echo Pushing %DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG%'
-                    bat '"%DOCKER_CMD%" push %DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG%'
-                    bat 'echo Pushing %DOCKER_USERNAME%/%IMAGE_NAME%:latest'
-                    bat '"%DOCKER_CMD%" push %DOCKER_USERNAME%/%IMAGE_NAME%:latest'
+                    bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && if not exist target\\*.jar (echo No JAR found in target && exit /b 1) && "%DOCKER_CMD%" buildx build --progress=plain --push -t %DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG% -t %DOCKER_USERNAME%/%IMAGE_NAME%:latest .'
                 }
             }
         }
