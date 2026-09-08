@@ -26,6 +26,8 @@ pipeline {
         stage('Docker Build') {
             steps {
                 bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && if not exist target\\*.jar (echo No JAR found in target && exit /b 1) && "%DOCKER_CMD%" build --load --progress=plain -t %IMAGE_NAME%:%IMAGE_TAG% -t %IMAGE_NAME%:latest . && "%DOCKER_CMD%" image inspect %IMAGE_NAME%:%IMAGE_TAG%'
+                bat '"%DOCKER_CMD%" save -o "%WORKSPACE%\\docker-image.tar" %IMAGE_NAME%:%IMAGE_TAG% %IMAGE_NAME%:latest'
+                stash name: 'docker-image', includes: 'docker-image.tar,k8s/deployment.yaml', useDefaultExcludes: false
             }
         }
 
@@ -39,6 +41,9 @@ pipeline {
                     )
                 ]) {
                     bat 'echo Docker Push stage started for build %BUILD_NUMBER%'
+                    deleteDir()
+                    unstash 'docker-image'
+                    bat '"%DOCKER_CMD%" load -i "%WORKSPACE%\\docker-image.tar"'
                     bat '"%DOCKER_CMD%" image inspect %IMAGE_NAME%:%IMAGE_TAG%'
                     bat 'echo %DOCKER_PASSWORD%| "%DOCKER_CMD%" login --username %DOCKER_USERNAME% --password-stdin'
                     bat '"%DOCKER_CMD%" tag %IMAGE_NAME%:%IMAGE_TAG% %DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG%'
