@@ -12,6 +12,8 @@ spec:
       labels:
         app: hello-world
     spec:
+      imagePullSecrets:
+        - name: dockerhub-registry
       containers:
         - name: hello-world
           image: hello-world:latest

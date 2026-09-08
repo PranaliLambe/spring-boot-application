@@ -43,7 +43,6 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat '"%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" cluster-info'
-                bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && "%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" apply -f k8s/deployment.yaml'
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-credentials',
@@ -51,6 +50,9 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
+                    bat 'echo Docker Hub Kubernetes pull secret setup'
+                    bat '"%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" create secret docker-registry dockerhub-registry --docker-server=https://index.docker.io/v1/ --docker-username=%DOCKER_USERNAME% --docker-password=%DOCKER_PASSWORD% --dry-run=client -o yaml | "%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" apply -f -'
+                    bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && "%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" apply -f k8s/deployment.yaml'
                     bat '"%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" set image deployment/hello-world hello-world=%DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG%'
                     bat '"%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" rollout status deployment/hello-world'
                 }
