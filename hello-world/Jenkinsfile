@@ -19,13 +19,13 @@ pipeline {
 
         stage('Package') {
             steps {
-                bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && "%MAVEN_CMD%" package -DskipTests'
+                bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && "%MAVEN_CMD%" clean package -DskipTests && if not exist target\\*.jar (echo No JAR was created in target && exit /b 1) && dir /b target\\*.jar'
             }
         }
 
         stage('Docker Build') {
             steps {
-                bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && "%DOCKER_CMD%" build -t %DOCKER_IMAGE%:%IMAGE_TAG% .'
+                bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && if not exist target\\*.jar (echo No JAR found in target && exit /b 1) && "%DOCKER_CMD%" build -t %DOCKER_IMAGE%:%IMAGE_TAG% .'
                 bat '"%DOCKER_CMD%" tag %DOCKER_IMAGE%:%IMAGE_TAG% %DOCKER_IMAGE%:latest'
             }
         }
