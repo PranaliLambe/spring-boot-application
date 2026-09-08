@@ -8,6 +8,8 @@ pipeline {
         MAVEN_CMD = 'C:\\Program Files\\apache-maven-3.9.15-bin\\apache-maven-3.9.15\\bin\\mvn.cmd'
         DOCKER_CMD = 'C:\\Users\\PranaliLambe\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe'
         KUBECTL_CMD = 'C:\\Users\\PranaliLambe\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe'
+        KUBECONFIG_FILE = 'C:\\Users\\PranaliLambe\\.kube\\config'
+        KUBE_CONTEXT = 'docker-desktop'
     }
 
     stages {
@@ -40,7 +42,8 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && "%KUBECTL_CMD%" apply -f k8s/deployment.yaml'
+                bat '"%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" cluster-info'
+                bat 'cd /d "%WORKSPACE%\\%APP_DIR%" && "%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" apply -f k8s/deployment.yaml'
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-credentials',
@@ -48,8 +51,8 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    bat '"%KUBECTL_CMD%" set image deployment/hello-world hello-world=%DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG%'
-                    bat '"%KUBECTL_CMD%" rollout status deployment/hello-world'
+                    bat '"%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" set image deployment/hello-world hello-world=%DOCKER_USERNAME%/%IMAGE_NAME%:%IMAGE_TAG%'
+                    bat '"%KUBECTL_CMD%" --kubeconfig "%KUBECONFIG_FILE%" --context "%KUBE_CONTEXT%" rollout status deployment/hello-world'
                 }
             }
         }
